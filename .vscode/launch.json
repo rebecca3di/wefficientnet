@@ -1,0 +1,36 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "track local",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/track.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                "--model", "II",
+                "--framework", "torch",
+                "--visualize",
+            ]
+        },
+        {
+            "name": "new track local",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/newtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                "--model", "II",
+                "--framework", "pytorch_transparent",
+                "--visualize",
+            ]
+        }
+    ]
+}

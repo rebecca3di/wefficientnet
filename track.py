@@ -7,6 +7,9 @@ import time
 
 from utils import helpers
 
+
+from newtrack import analyze_image_transparent, device_
+
 def get_model(framework, model_variant):
     """
     Load the desired EfficientPose model variant using the requested deep learning framework.
@@ -63,6 +66,23 @@ def get_model(framework, model_variant):
         model.eval()
         qconfig = quantization.get_default_qconfig('qnnpack')
         backends.quantized.engine = 'qnnpack'
+
+    # pytorch_transparent
+    elif framework in ['pytorch_transparent']:
+        from imp import load_source
+        from torch import load, quantization, backends
+        try:
+            MainModel = load_source('MainModel', join('models', 'pytorch_transparent', 'EfficientPose{0}.py'.format(model_variant.upper())))
+        except:
+            print('\n##########################################################################################################')
+            print('Desired model "EfficientPose{0}Lite" not available in PyTorch. Please select among "RT", "I", "II", "III" or "IV".'.format(model_variant.split('lite')[0].upper()))
+            print('##########################################################################################################\n')
+            return False, False
+        model = load(join('models', 'pytorch', 'EfficientPose{0}'.format(model_variant.upper())))
+        model = model.to(device_)
+        model.eval()
+        qconfig = quantization.get_default_qconfig('qnnpack')
+        backends.quantized.engine = 'qnnpack'
             
     return model, {'rt': 224, 'i': 256, 'ii': 368, 'iii': 480, 'iv': 600, 'rt_lite': 224, 'i_lite': 256, 'ii_lite': 368}[model_variant]
 
@@ -116,6 +136,15 @@ def infer(batch, model, lite, framework):
         batch_outputs = model(batch)
         batch_outputs = batch_outputs.detach().numpy()
         batch_outputs = np.rollaxis(batch_outputs, 1, 4)
+
+    # PyTorch_transparent
+    elif framework in ['pytorch_transparent']:
+        from torch import from_numpy, autograd
+        batch = np.rollaxis(batch, 3, 1)
+        batch = from_numpy(batch)
+        batch = autograd.Variable(batch).float()
+        batch_outputs = model(batch)
+        batch_outputs = (_.permute([0, 4, 2, 3, 1]) for _ in batch_outputs)
         
     return batch_outputs
 
@@ -325,6 +354,10 @@ def analyze(video, file_path, model, framework, resolution, lite):
     # Video analysis
     elif video:
         coordinates = analyze_video(file_path, model, framework, resolution, lite)
+
+    # if transparent
+    elif framework in ['pytorch_transparent']:
+        coordinates = analyze_image_transparent(file_path, model, framework, resolution, lite)
     
     # Image analysis
     else:
@@ -357,6 +390,8 @@ def annotate_image(file_path, coordinates):
     
     # Save annotated image
     image.save(normpath(file_path.split('.')[0] + '_tracked.png'))
+
+    return image
     
 def annotate_video(file_path, coordinates):
     """
@@ -478,7 +513,7 @@ def perform_tracking(video, file_path, model_name, framework_name, visualize, st
     # VERIFY FRAMEWORK AND MODEL VARIANT
     framework = framework_name.lower()
     model_variant = model_name.lower()
-    if framework not in ['keras', 'k', 'tensorflow', 'tf', 'tensorflowlite', 'tflite', 'pytorch', 'torch']:
+    if framework not in ['keras', 'k', 'tensorflow', 'tf', 'tensorflowlite', 'tflite', 'pytorch', 'torch', 'pytorch_transparent']:
         print('\n##########################################################################################################')
         print('Desired framework "{0}" not available. Please select among "tflite", "tensorflow", "keras" or "pytorch".'.format(framework_name))
         print('##########################################################################################################\n')
