@@ -33,6 +33,9 @@ class combine_translator(nn.Module):
         ]
         self.head = nn.Sequential(*head)
 
+        self.mean = torch.tensor([0.485, 0.456, 0.406])
+        self.std = torch.tensor([0.229, 0.224, 0.225])
+
     @staticmethod
     def upconvblock(in_c, out_c, k, s):
         assert k % 2 == 1
@@ -56,5 +59,9 @@ class combine_translator(nn.Module):
         x = self.head(x)
 
         # x = F.sigmoid(x.float()).half() if (x.dtype == torch.float16) else F.sigmoid(x)
-        x = torch.clip(x, 0, 1)
-        return x - 0.5
+        # x = torch.clip(x, 0, 1)
+        x = torch.sigmoid(x)
+
+        x = torch.cat([(x[:, [_], ...] - self.mean[_]) / self.std[_] for _ in range(3)], dim=1)
+        
+        return x

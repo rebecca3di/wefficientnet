@@ -31,6 +31,20 @@
                 "--framework", "pytorch_transparent",
                 "--visualize",
             ]
+        },
+        {
+            "name": "batch track local",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/batchtrack/batchtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                // "--model", "II",
+                // "--framework", "pytorch_transparent",
+                // "--visualize",
+            ]
         }
     ]
 }

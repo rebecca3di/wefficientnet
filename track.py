@@ -488,7 +488,7 @@ def save(video, file_path, coordinates):
     csv_file.flush()
     csv_file.close()
     
-def perform_tracking(video, file_path, model_name, framework_name, visualize, store):
+def perform_tracking(video, file_path, model_name, framework_name, visualize, store, train=True):
     """
     Process of estimating poses from camera/video/image.
     

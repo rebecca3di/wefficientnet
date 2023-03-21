@@ -204,7 +204,7 @@ def main(file_path, model_name, framework_name, visualize, store):
 
 if __name__ == '__main__':
 
-    task_save_root = '0316testrun'
+    task_save_root = '0321testrun'
     writer = SummaryWriter('tensorboard/'+task_save_root)
 
     # Fetch arguments
