@@ -16,6 +16,13 @@ def loss_mse(x, x_):
     # return sum([F.mse_loss(torch.tensor(y_[1:]), torch.tensor(y[1:])) for (y_, y) in zip(x_[0], x[0])])
 
 
+def loss_mse_1(x, x_, i=-1):
+    loss = 0.0
+    # for i in range(x.__len__()):
+    loss += F.smooth_l1_loss(x[i], x_[i])
+    return loss
+
+
 def loss_kld(x, x_, eps=1e-8):
     x = [_.view(_.shape[0], _.shape[1], -1) for _ in x]
     x_ = [_.view(_.shape[0], _.shape[1], -1) for _ in x_]

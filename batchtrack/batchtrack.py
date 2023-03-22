@@ -29,9 +29,9 @@ def main(gpu_id=0,
          len_epoch_valid=10,
          lite=False,
          translator=translator,
-         lr=1e-3,
+         lr=1e-4,
          weight_decay=1e-4,
-         logdir='0321-1',
+         logdir='0321-3',
          preview_gap=10,
          ):
     
@@ -63,6 +63,8 @@ def main(gpu_id=0,
     optimizer = torch.optim.Adam(translator.parameters(),
                                  lr=lr,
                                  weight_decay=weight_decay,)
+    scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer, 
+                                                          0.995)
 
     # resizer = nn.AdaptiveAvgPool2d((368, 368))
     for j in range(n_epoch):
@@ -97,6 +99,7 @@ def main(gpu_id=0,
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates_[k]))
                 preview_batch = np.stack(preview_batch, axis=0)
                 writer.add_images('train_image', preview_batch, j, dataformats='NHWC')
+        scheduler.step()
 
         for i in tqdm.trange(len_epoch_valid):
             idx, (jpg, csi) = next(enumerate(cycle(valid_loader)))
@@ -131,7 +134,12 @@ def main(gpu_id=0,
                 preview_batch = np.stack(preview_batch, axis=0)
                 writer.add_images('valid_image', preview_batch, j, dataformats='NHWC')
 
-        writer.add_scalars('loss', {'valid_loss_epoch': valid_loss_epoch.avg(), 'train_loss_epoch': train_loss_epoch.avg()}, j)
+        writer.add_scalars('loss', {'valid_loss_epoch': valid_loss_epoch.avg(), 'train_loss_epoch': train_loss_epoch.avg()}, global_step=j)
+
+        if j % 100 == 0:
+            torch.save(translator, 'tensorboard/' + logdir + '/t_epoch%d.model' % j)
+            if j == 0:
+                torch.save(model, 'tensorboard/' + logdir + '/m_epoch%d.model' % j)
 
 
 if __name__ == '__main__':
