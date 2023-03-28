@@ -9,13 +9,14 @@ from torch.utils.data import DataLoader
 from itertools import cycle
 
 import sys
+# sys.path.insert(0, '/home/lscsc/caizhijie/ref-rep/EfficientPose/')
 sys.path.insert(0, 'D:\caizhijie\codes\wefficientnet')
 
 from track import get_model
-from one2manybatching import csi_n_pic_dataset, collate_fn
+from many2manybatching import csi_n_pic_dataset, collate_fn
 from utils.helpers import preprocess, extract_coordinates
-from batchutils import loss_kld, loss_mse, Recorder, annotate_image, mask
-from translators import longer_combine_translator as translator
+from batchutils import loss_kld, loss_mse, Recorder, annotate_image
+from translators import seq_translator as translator
 
 from utils import helpers
 
@@ -24,7 +25,7 @@ def main(gpu_id=0,
          model_variant='ii',
         #  pk_path='/home/lscsc/caizhijie/ref-rep/pytorch-openpose/dataparse_/pathpacks_',
          pk_path='D:\caizhijie\codes\wopen-pose\dataparse_\pathpacks_',
-         batch_size=8, 
+         batch_size=1, 
          n_epoch=10000,
          len_epoch_train=10,
          len_epoch_valid=10,
@@ -32,8 +33,9 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0327-one2manymask',
+         logdir='0327-many2many',
          preview_gap=10,
+         accum_step=8,
          ):
     
     device = torch.device('cuda:%d' % gpu_id)
@@ -73,29 +75,31 @@ def main(gpu_id=0,
     for j in range(n_epoch):
         train_loss_epoch = Recorder()
         valid_loss_epoch = Recorder()
-        for i in tqdm.trange(len_epoch_train):
+        for i in tqdm.trange(len_epoch_train * accum_step):
             idx, (jpg, csi) = next(enumerate(cycle(train_loader)))
-            _jpg = copy.deepcopy(jpg)
+            _jpg = copy.deepcopy(jpg).reshape(-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1])
 
-            # jpg = jpg.transpose([0, 3, 1, 2])
-            # _jpg = _jpg.transpose([0, 3, 1, 2])
-
+            jpg = jpg.reshape((-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1]))
             jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device).permute([0, 3, 1, 2])
-            jpg_ = translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float()))
+            jpg_ = translator(torch.tensor(csi).to(device).float()).permute([0, 2, 1, 3, 4])
+            jpg_ = jpg_.reshape((-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1]))
 
             outputs = model(jpg)
             outputs_ = model(jpg_)
 
             picsize = 368
 
-            coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
-            coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
+            coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
+            coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
 
-            optimizer.zero_grad()
             loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
-            loss.backward()
-            optimizer.step()
             train_loss_epoch.update(loss.detach().cpu().numpy())
+            loss.backward()
+            
+            if (1+i) % accum_step == 0:
+                optimizer.zero_grad()
+                optimizer.step()
+            
 
             # preview image
             if i % preview_gap == 0:
@@ -108,24 +112,23 @@ def main(gpu_id=0,
                 writer.add_images('train_image', preview_batch, j, dataformats='NHWC')
         scheduler.step()
 
-        for i in tqdm.trange(len_epoch_valid):
-            idx, (jpg, csi) = next(enumerate(cycle(valid_loader)))
-            _jpg = copy.deepcopy(jpg)
-            jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device)
-            jpg_ = translator(torch.tensor(csi).to(device).float())
-
+        for i in tqdm.trange(len_epoch_valid * accum_step):
             with torch.no_grad():
                 idx, (jpg, csi) = next(enumerate(cycle(valid_loader)))
+                _jpg = copy.deepcopy(jpg).reshape(-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1])
+
+                jpg = jpg.reshape((-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1]))
                 jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device).permute([0, 3, 1, 2])
-                jpg_ = mask(translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float())))
+                jpg_ = translator(torch.tensor(csi).to(device).float()).permute([0, 2, 1, 3, 4])
+                jpg_ = jpg_.reshape((-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1]))
 
                 outputs = model(jpg)
                 outputs_ = model(jpg_)
 
                 picsize = 368
 
-                coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
-                coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
+                coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
+                coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
 
                 loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
 
@@ -135,7 +138,7 @@ def main(gpu_id=0,
             preview_batch = list()
             if i % preview_gap == 0:
                 jpg_numpy = np.uint8(_jpg).transpose([0, 3, 1, 2])
-                for k in range(8):
+                for k in range(4):
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates[k]))
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates_[k]))
                 preview_batch = np.stack(preview_batch, axis=0)

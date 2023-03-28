@@ -1,2 +1,3 @@
 utils/MPII_*
 tensorboard
+__pycache__

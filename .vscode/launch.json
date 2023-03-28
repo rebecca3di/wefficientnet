@@ -88,5 +88,19 @@
                 // "--visualize",
             ]
         },
+        {
+            "name": "many2manybatchtrack",
+            "type": "python",
+            "request": "launch",
+            "program": "batchtrack/many2manybatchtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                // "--model", "II",
+                // "--framework", "pytorch_transparent",
+                // "--visualize",
+            ]
+        },
     ]
 }

@@ -24,12 +24,13 @@ class csi_n_pic_dataset(Dataset):
     
 
 def collate_fn(batch, posix='.pk_2_1'):
-    n_steps = 2
+    n_steps = 10
+    n_frames = 5
 
     # try:
-    jpgs = [np.array(Image.open(_['pathpack'][0])) for _ in batch]
-    csiamp = [np.concatenate([pk.load(open(_[:-4] + posix, 'rb'))[0] for _ in b['pathpack'][:n_steps]], axis=0)[:25, ...] for b in batch]
-    csipha = [np.concatenate([pk.load(open(_[:-4] + posix, 'rb'))[1] for _ in b['pathpack'][:n_steps]], axis=0)[:25, ...] for b in batch]
+    jpgs = [np.stack([np.array(Image.open(_)) for _ in b['pathpack'][:n_frames]], axis=0) for b in batch]
+    csiamp = [np.concatenate([pk.load(open(_[:-4] + posix, 'rb'))[0] for _ in b['pathpack'][:n_steps]], axis=0)[:64, ...] for b in batch]
+    csipha = [np.concatenate([pk.load(open(_[:-4] + posix, 'rb'))[1] for _ in b['pathpack'][:n_steps]], axis=0)[:64, ...] for b in batch]
     # except:
         # jpgs = [np.array(Image.open(prefix + _['pathpack'][0][32:])) for _ in batch]
         # csiamp = [np.concatenate([pk.load(open(prefix + _[32:-4] + posix, 'rb'))[0] for _ in b['pathpack'][:n_steps]], axis=0)[:25, ...] for b in batch]
