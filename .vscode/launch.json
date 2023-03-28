@@ -45,6 +45,34 @@
                 // "--framework", "pytorch_transparent",
                 // "--visualize",
             ]
-        }
+        },
+        {
+            "name": "one2onebatchtrack",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/batchtrack/one2onebatchtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                // "--model", "II",
+                // "--framework", "pytorch_transparent",
+                // "--visualize",
+            ]
+        },
+        {
+            "name": "one2manybatchtrack",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/batchtrack/one2manybatchtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                // "--model", "II",
+                // "--framework", "pytorch_transparent",
+                // "--visualize",
+            ]
+        },
     ]
 }

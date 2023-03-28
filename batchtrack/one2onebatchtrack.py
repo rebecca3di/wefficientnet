@@ -31,7 +31,7 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0321-2',
+         logdir='0327-one2one',
          preview_gap=10,
          ):
     
@@ -63,8 +63,10 @@ def main(gpu_id=0,
     optimizer = torch.optim.Adam(translator.parameters(),
                                  lr=lr,
                                  weight_decay=weight_decay,)
-    scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer, 
-                                                          0.995)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, 
+                                                       gamma=0.998,
+                                                    #    last_epoch=5000,
+                                                       )
 
     # resizer = nn.AdaptiveAvgPool2d((368, 368))
     for j in range(n_epoch):
@@ -85,7 +87,7 @@ def main(gpu_id=0,
             coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
 
             optimizer.zero_grad()
-            loss = loss_mse(outputs, outputs_) + loss_mse(coordinates, coordinates_)
+            loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
             loss.backward()
             optimizer.step()
             train_loss_epoch.update(loss.detach().cpu().numpy())
@@ -94,7 +96,7 @@ def main(gpu_id=0,
             if i % preview_gap == 0:
                 preview_batch = list()
                 jpg_numpy = np.uint8(_jpg).transpose([0, 3, 1, 2])
-                for k in range(4):
+                for k in range(8):
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates[k]))
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates_[k]))
                 preview_batch = np.stack(preview_batch, axis=0)
@@ -120,7 +122,7 @@ def main(gpu_id=0,
                 coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
                 coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
 
-                loss = loss_mse(outputs, outputs_) + loss_mse(coordinates, coordinates_)
+                loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
 
             valid_loss_epoch.update(loss.detach().cpu().numpy())
 
@@ -128,13 +130,14 @@ def main(gpu_id=0,
             preview_batch = list()
             if i % preview_gap == 0:
                 jpg_numpy = np.uint8(_jpg).transpose([0, 3, 1, 2])
-                for k in range(4):
+                for k in range(8):
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates[k]))
                     preview_batch.append(annotate_image(jpg_numpy[k], coordinates_[k]))
                 preview_batch = np.stack(preview_batch, axis=0)
                 writer.add_images('valid_image', preview_batch, j, dataformats='NHWC')
 
         writer.add_scalars('loss', {'valid_loss_epoch': valid_loss_epoch.avg(), 'train_loss_epoch': train_loss_epoch.avg()}, global_step=j)
+        writer.add_scalar('lr', scheduler.get_last_lr()[0], j)
 
         if j % 100 == 0:
             torch.save(translator, 'tensorboard/' + logdir + '/t_epoch%d.model' % j)
