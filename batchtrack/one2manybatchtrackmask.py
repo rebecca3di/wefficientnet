@@ -81,7 +81,7 @@ def main(gpu_id=0,
             # _jpg = _jpg.transpose([0, 3, 1, 2])
 
             jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device).permute([0, 3, 1, 2])
-            jpg_ = translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float()))
+            jpg_ = mask(translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float())))
 
             outputs = model(jpg)
             outputs_ = model(jpg_)
@@ -117,7 +117,7 @@ def main(gpu_id=0,
             with torch.no_grad():
                 idx, (jpg, csi) = next(enumerate(cycle(valid_loader)))
                 jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device).permute([0, 3, 1, 2])
-                jpg_ = mask(translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float())))
+                jpg_ = translator((torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float()))
 
                 outputs = model(jpg)
                 outputs_ = model(jpg_)
