@@ -64,7 +64,21 @@
             "name": "one2manybatchtrack",
             "type": "python",
             "request": "launch",
-            "program": "/home/lscsc/caizhijie/ref-rep/EfficientPose/batchtrack/one2manybatchtrack.py",
+            "program": "batchtrack/one2manybatchtrack.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "--path", "/home/lscsc/caizhijie/ref-rep/EfficientPose/utils/MPII.jpg",
+                // "--model", "II",
+                // "--framework", "pytorch_transparent",
+                // "--visualize",
+            ]
+        },
+        {
+            "name": "one2manybatchtrackmask",
+            "type": "python",
+            "request": "launch",
+            "program": "batchtrack/one2manybatchtrackmask.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [

@@ -9,12 +9,12 @@ from torch.utils.data import DataLoader
 from itertools import cycle
 
 import sys
-sys.path.insert(0, '/home/lscsc/caizhijie/ref-rep/EfficientPose/')
+sys.path.insert(0, 'D:\caizhijie\codes\wefficientnet')
 
 from track import get_model
 from one2manybatching import csi_n_pic_dataset, collate_fn
 from utils.helpers import preprocess, extract_coordinates
-from batchutils import loss_kld, loss_mse, Recorder, annotate_image
+from batchutils import loss_kld, loss_mse, Recorder, annotate_image, mask
 from translators import longer_combine_translator as translator
 
 from utils import helpers
@@ -22,7 +22,8 @@ from utils import helpers
 def main(gpu_id=0,
          framework='pytorch_transparent',
          model_variant='ii',
-         pk_path='/home/lscsc/caizhijie/ref-rep/pytorch-openpose/dataparse_/pathpacks_',
+        #  pk_path='/home/lscsc/caizhijie/ref-rep/pytorch-openpose/dataparse_/pathpacks_',
+         pk_path='D:\caizhijie\codes\wopen-pose\dataparse_\pathpacks_',
          batch_size=8, 
          n_epoch=10000,
          len_epoch_train=10,
@@ -31,7 +32,7 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0327-one2many',
+         logdir='0327-one2manymask',
          preview_gap=10,
          ):
     
@@ -75,8 +76,12 @@ def main(gpu_id=0,
         for i in tqdm.trange(len_epoch_train):
             idx, (jpg, csi) = next(enumerate(cycle(train_loader)))
             _jpg = copy.deepcopy(jpg)
+
+            # jpg = jpg.transpose([0, 3, 1, 2])
+            # _jpg = _jpg.transpose([0, 3, 1, 2])
+
             jpg = torch.tensor(preprocess(jpg, resolution, lite)).to(device).permute([0, 3, 1, 2])
-            jpg_ = translator(torch.tensor(csi).to(device).float())
+            jpg_ = translator(torch.tensor(csi[0]).to(device).float(), torch.tensor(csi[1]).to(device).float())
 
             outputs = model(jpg)
             outputs_ = model(jpg_)

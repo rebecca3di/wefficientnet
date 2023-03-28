@@ -10,7 +10,7 @@ from skimage.transform import rescale
 from scipy.ndimage.filters import gaussian_filter
 
 class Swish(Activation):
-    """
+    """pip
     Custom Swish activation function for Keras.
     """
     
@@ -176,7 +176,9 @@ def resize(source_array, target_height, target_width):
         scale = target_height / source_height
         
     # Perform rescaling
-    resized_array = rescale(source_array, scale, multichannel=True)
+    resized_array = rescale(source_array, scale, #multichannel=True
+                            channel_axis=-1
+                            )
     
     return resized_array
 

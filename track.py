@@ -82,7 +82,8 @@ def get_model(framework, model_variant):
         model = model.to(device_)
         model.eval()
         qconfig = quantization.get_default_qconfig('qnnpack')
-        backends.quantized.engine = 'qnnpack'
+        # backends.quantized.engine = 'qnnpack'
+        backends.quantized.engine='onednn'
             
     return model, {'rt': 224, 'i': 256, 'ii': 368, 'iii': 480, 'iv': 600, 'rt_lite': 224, 'i_lite': 256, 'ii_lite': 368}[model_variant]
 

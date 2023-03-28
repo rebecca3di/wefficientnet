@@ -23,6 +23,12 @@ def loss_mse_1(x, x_, i=-1):
     return loss
 
 
+def mask(x):
+    # 
+    a = 1
+    return  x
+
+
 def loss_kld(x, x_, eps=1e-8):
     x = [_.view(_.shape[0], _.shape[1], -1) for _ in x]
     x_ = [_.view(_.shape[0], _.shape[1], -1) for _ in x_]
