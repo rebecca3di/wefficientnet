@@ -23,10 +23,16 @@ def loss_mse_1(x, x_, i=-1):
     return loss
 
 
-def mask(x):
+def mask(x, mu_n_mask=5, mask_size=19, eps=1e-8):
     # 
-    a = 1
-    return  x
+    for i in range(x.shape[0]):
+        maskposition_x = np.int16(np.random.random(size=(mu_n_mask)) * x.shape[1])
+        maskposition_y = np.int16(np.random.random(size=(mu_n_mask)) * x.shape[2])
+        for j in range(mu_n_mask):
+            x_ = maskposition_x[j]
+            y_ = maskposition_y[j]
+            x[i, x_:x_ + mask_size, y_:y_ + mask_size] *= eps
+    return x
 
 
 def loss_kld(x, x_, eps=1e-8):
