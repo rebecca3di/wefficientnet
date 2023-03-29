@@ -32,7 +32,7 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0329-one2manymask',
+         logdir='0329-one2manymask_ablation',
          preview_gap=10,
          ):
     
