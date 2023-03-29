@@ -31,7 +31,7 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0327-one2many',
+         logdir='0329-one2many-ablation',
          preview_gap=10,
          ):
     
@@ -64,7 +64,7 @@ def main(gpu_id=0,
                                  lr=lr,
                                  weight_decay=weight_decay,)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, 
-                                                       gamma=0.998,
+                                                       gamma=1.0,
                                                     #    last_epoch=5000,
                                                        )
 
@@ -72,6 +72,8 @@ def main(gpu_id=0,
     for j in range(n_epoch):
         train_loss_epoch = Recorder()
         valid_loss_epoch = Recorder()
+        train_metric_epoch = Recorder()
+        valid_metric_epoch = Recorder()
         for i in tqdm.trange(len_epoch_train):
             idx, (jpg, csi) = next(enumerate(cycle(train_loader)))
             _jpg = copy.deepcopy(jpg)
@@ -87,10 +89,11 @@ def main(gpu_id=0,
             coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
 
             optimizer.zero_grad()
-            loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
+            loss, metric = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
             loss.backward()
             optimizer.step()
             train_loss_epoch.update(loss.detach().cpu().numpy())
+            train_metric_epoch.update(metric.detach().cpu().numpy())
 
             # preview image
             if i % preview_gap == 0:
@@ -122,9 +125,10 @@ def main(gpu_id=0,
                 coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
                 coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size)]
 
-                loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
+                loss, metric = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
 
             valid_loss_epoch.update(loss.detach().cpu().numpy())
+            valid_metric_epoch.update(metric.detach().cpu().numpy())
 
             # preview image
             preview_batch = list()
@@ -137,6 +141,7 @@ def main(gpu_id=0,
                 writer.add_images('valid_image', preview_batch, j, dataformats='NHWC')
 
         writer.add_scalars('loss', {'valid_loss_epoch': valid_loss_epoch.avg(), 'train_loss_epoch': train_loss_epoch.avg()}, global_step=j)
+        writer.add_scalars('metric', {'valid_metric_epoch': valid_metric_epoch.avg(), 'train_metric_epoch': train_metric_epoch.avg()}, global_step=j)
         writer.add_scalar('lr', scheduler.get_last_lr()[0], j)
 
         if j % 100 == 0:
