@@ -11,8 +11,9 @@ from utils import helpers
 def loss_mse(x, x_):
     loss = 0.0
     for i in range(x.__len__()):
-        loss += F.smooth_l1_loss(x[i], x_[i])
-    return loss
+        metric = F.smooth_l1_loss(x[i], x_[i])
+        loss += metric
+    return loss, metric
     # return sum([F.mse_loss(torch.tensor(y_[1:]), torch.tensor(y[1:])) for (y_, y) in zip(x_[0], x[0])])
 
 
