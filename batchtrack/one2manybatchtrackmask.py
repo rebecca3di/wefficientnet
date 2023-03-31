@@ -32,7 +32,7 @@ def main(gpu_id=0,
          translator=translator,
          lr=1e-4,
          weight_decay=1e-4,
-         logdir='0329-one2manymask_ablation',
+         logdir='0330-one2manymask_ablation',
          preview_gap=10,
          ):
     
@@ -133,7 +133,7 @@ def main(gpu_id=0,
                 loss, metric = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
 
             valid_loss_epoch.update(loss.detach().cpu().numpy())
-            valid_metric_epoch.update(loss.detach().cpu().numpy())
+            valid_metric_epoch.update(metric.detach().cpu().numpy())
 
             # preview image
             preview_batch = list()

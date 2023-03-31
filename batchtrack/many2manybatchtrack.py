@@ -75,6 +75,8 @@ def main(gpu_id=0,
     for j in range(n_epoch):
         train_loss_epoch = Recorder()
         valid_loss_epoch = Recorder()
+        train_metric_epoch = Recorder()
+        valid_metric_epoch = Recorder()
         for i in tqdm.trange(len_epoch_train * accum_step):
             idx, (jpg, csi) = next(enumerate(cycle(train_loader)))
             _jpg = copy.deepcopy(jpg).reshape(-1, jpg.shape[-3], jpg.shape[-2], jpg.shape[-1])
@@ -92,8 +94,10 @@ def main(gpu_id=0,
             coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
             coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
 
-            loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
+            loss, metric = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
             train_loss_epoch.update(loss.detach().cpu().numpy())
+            train_metric_epoch.update(metric.detach().cpu().numpy())
+
             loss.backward()
             
             if (1+i) % accum_step == 0:
@@ -130,9 +134,10 @@ def main(gpu_id=0,
                 coordinates = [extract_coordinates(outputs[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
                 coordinates_ = [extract_coordinates(outputs_[0][_,...].permute([1, 2, 0]).detach().cpu().numpy(), picsize, picsize) for _ in range(batch_size * _jpg.shape[0])]
 
-                loss = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
+                loss, metric = loss_mse(outputs, outputs_)# + loss_mse(coordinates, coordinates_)
 
             valid_loss_epoch.update(loss.detach().cpu().numpy())
+            valid_metric_epoch.update(metric.detach().cpu().numpy())
 
             # preview image
             preview_batch = list()
@@ -145,6 +150,7 @@ def main(gpu_id=0,
                 writer.add_images('valid_image', preview_batch, j, dataformats='NHWC')
 
         writer.add_scalars('loss', {'valid_loss_epoch': valid_loss_epoch.avg(), 'train_loss_epoch': train_loss_epoch.avg()}, global_step=j)
+        writer.add_scalars('metric', {'valid_metric_epoch': valid_metric_epoch.avg(), 'train_metric_epoch': train_metric_epoch.avg()}, global_step=j)
         writer.add_scalar('lr', scheduler.get_last_lr()[0], j)
 
         if j % 100 == 0:

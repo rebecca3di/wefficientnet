@@ -5,32 +5,62 @@ class seq_translator(nn.Module):
     def __init__(self):
         super(seq_translator, self).__init__()
         self.amp_head_ = nn.Sequential(
-            nn.Conv1d(90, 128, 5, 1, 1),
-            nn.BatchNorm1d(128),
+            # nn.Conv1d(90, 128, 5, 1, 1),
+            # nn.BatchNorm1d(128),
+            # nn.ReLU(),
+            # nn.Conv1d(128, 128, 7, 2, 2),
+            # nn.BatchNorm1d(128),
+            # nn.ReLU(),
+            # nn.Conv1d(128, 128, 9, 3, 3),
+            # nn.BatchNorm1d(128),
+            nn.Conv3d(1, 16, 1, 1, 0),
+            nn.BatchNorm3d(16),
             nn.ReLU(),
-            nn.Conv1d(128, 128, 7, 2, 2),
-            nn.BatchNorm1d(128),
+            nn.Conv3d(16, 32, (3, 7, 5), (1, 3, 2), (1, 3, 2)),
+            nn.BatchNorm3d(32),
             nn.ReLU(),
-            nn.Conv1d(128, 128, 9, 3, 3),
-            nn.BatchNorm1d(128),
+            nn.Conv3d(32, 64, (3, 7, 5), (1, 3, 2), (1, 3, 2)),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.Conv3d(64, 64, 3, 1, 1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.Conv3d(64, 64, 3, (1, 2, 2), 1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(1280, 1024),
+            nn.Linear(3072, 1024),
             nn.ReLU(),
             nn.Linear(1024, 256),
             nn.ReLU(),
             nn.Linear(256, 800),
         )
         self.pha_head_ = nn.Sequential(
-            nn.Conv1d(90, 128, 5, 1, 1),
-            nn.BatchNorm1d(128),
+            # nn.Conv1d(90, 128, 5, 1, 1),
+            # nn.BatchNorm1d(128),
+            # nn.ReLU(),
+            # nn.Conv1d(128, 128, 7, 2, 2),
+            # nn.BatchNorm1d(128),
+            # nn.ReLU(),
+            # nn.Conv1d(128, 128, 9, 3, 3),
+            # nn.BatchNorm1d(128),
+            nn.Conv3d(1, 16, 1, 1, 0),
+            nn.BatchNorm3d(16),
             nn.ReLU(),
-            nn.Conv1d(128, 128, 7, 2, 2),
-            nn.BatchNorm1d(128),
+            nn.Conv3d(16, 32, (3, 7, 5), (1, 3, 2), (1, 3, 2)),
+            nn.BatchNorm3d(32),
             nn.ReLU(),
-            nn.Conv1d(128, 128, 9, 3, 3),
-            nn.BatchNorm1d(128),
+            nn.Conv3d(32, 64, (3, 7, 5), (1, 3, 2), (1, 3, 2)),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.Conv3d(64, 64, 3, 1, 1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.Conv3d(64, 64, 3, (1, 2, 2), 1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(1280, 1024),
+            nn.Linear(3072, 1024),
             nn.ReLU(),
             nn.Linear(1024, 256),
             nn.ReLU(),
@@ -69,8 +99,12 @@ class seq_translator(nn.Module):
         return nn.Sequential(*layers)
     
     def forward(self, x):
-        _amp = x[0].permute(0, -2, -1, 1).view([x[0].shape[0], -1, x[0].shape[1]])
-        _pha = x[0].permute(0, -2, -1, 1).view([x[0].shape[0], -1, x[1].shape[1]])
+        # _amp = x[0].permute(0, -2, -1, 1).view([x[0].shape[0], -1, x[0].shape[1]])
+        # _pha = x[0].permute(0, -2, -1, 1).view([x[0].shape[0], -1, x[1].shape[1]])
+
+        _amp = x[0].permute(0, 3, 1, 2).unsqueeze(1)
+        _pha = x[1].permute(0, 3, 1, 2).unsqueeze(1)
+
         amp_ = self.amp_head_(_amp)
         pha_ = self.pha_head_(_pha)
         x = torch.cat([amp_, pha_], -1).view([x[0].shape[0], 40, 40]).unsqueeze(1)
